@@ -37,7 +37,12 @@ public class Volume {
     
     
     public short getVoxel(int x, int y, int z) {
-        return data[x + dimX*(y + dimY * z)];
+        try {
+            return data[x + dimX * (y + dimY * z)];
+        }catch (ArrayIndexOutOfBoundsException e) {
+            return 0;
+        }
+
     }
     
     public void setVoxel(int x, int y, int z, short value) {
