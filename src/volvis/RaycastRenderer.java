@@ -10,6 +10,7 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 
+import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
@@ -119,15 +120,64 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return maxVal;
     }
 
+    int getValueByFindingIntersections(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
+        int maxVal = 0;
+        double[] pixelCoord = new double[3];
+
+        //Getting the original point v_0
+        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter);
+        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter);
+        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter);
+
+        //Find 6 intersections
+        double[] k = new double[6];
+
+        k[0] = viewVec[0] == 0 ? - pixelCoord[0] / viewVec[0] : Double.MAX_VALUE;
+        k[1] = viewVec[1] == 0 ? - pixelCoord[1] / viewVec[1] : Double.MAX_VALUE;
+        k[2] = viewVec[2] == 0 ? - pixelCoord[2] / viewVec[2] : Double.MAX_VALUE;
+        k[3] = viewVec[0] == 0 ? (volume.getDimX() - pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
+        k[4] = viewVec[0] == 0 ? (volume.getDimY() - pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
+        k[5] = viewVec[0] == 0 ? (volume.getDimZ() - pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
+
+        //Extract 2 nearest intersection points
+        double kMin = Double.MAX_VALUE, kSecondMin = Double.MAX_VALUE;
+        for (int t = 0; t < 6; ++t) {
+            if (k[t] < kMin) kMin = k[t];
+        }
+
+        for (int t = 0; t < 6; ++t) {
+            if (k[t] < kSecondMin && k[t] > kMin) kSecondMin = k[t];
+        }
+
+        for (int t = (int) kMin; t < (int) kSecondMin; ++t) {
+
+            double[] currentPosition = new double[3];
+            VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
+
+            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                    + currentPosition[0];
+            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                    + currentPosition[1];
+            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                    + currentPosition[2];
+
+            int val = getVoxel(pixelCoord);
+//            System.out.println(maxVal);
+            maxVal = val > maxVal ? val : maxVal;
+        }
+
+        return maxVal;
+    }
+
     //Original method (Center Slice)
     int getValueByCenter(int i, int j, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
-        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+        pixelCoord[0] +=
                 + volumeCenter[0];
-        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+        pixelCoord[1] +=
                 + volumeCenter[1];
-        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+        pixelCoord[2] +=
                 + volumeCenter[2];
 
         return getVoxel(pixelCoord);
@@ -151,30 +201,22 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         VectorMath.setVector(uVec, viewMatrix[0], viewMatrix[4], viewMatrix[8]);
         VectorMath.setVector(vVec, viewMatrix[1], viewMatrix[5], viewMatrix[9]);
 
-        //normalize the view vector
-//        double viewVecLength = VectorMath.length(viewVec);
-//        VectorMath.setVector(viewVec,
-//                viewVec[0] / viewVecLength,
-//                viewVec[1] / viewVecLength,
-//                viewVec[2] / viewVecLength);
-
         // image is square
         int imageCenter = image.getWidth() / 2;
 
         double[] volumeCenter = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
-        System.out.println(volume.getDimX() + " " + volume.getDimY() + " " + volume.getDimZ());
+//        System.out.println(volume.getDimX() + " " + volume.getDimY() + " " + volume.getDimZ());
 
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
 
-
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
 //                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, 50);
-
                 int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
+//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
