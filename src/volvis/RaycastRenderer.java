@@ -154,12 +154,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             double[] currentPosition = new double[3];
             VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
 
-            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
-                    + currentPosition[0];
-            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
-                    + currentPosition[1];
-            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
-                    + currentPosition[2];
+            pixelCoord[0] +=
+                    + volumeCenter[0];
+            pixelCoord[1] +=
+                    + volumeCenter[1];
+            pixelCoord[2] +=
+                    + volumeCenter[2];
 
             int val = getVoxel(pixelCoord);
 //            System.out.println(maxVal);
@@ -173,11 +173,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     int getValueByCenter(int i, int j, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
-        pixelCoord[0] +=
+        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
                 + volumeCenter[0];
-        pixelCoord[1] +=
+        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
                 + volumeCenter[1];
-        pixelCoord[2] +=
+        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                 + volumeCenter[2];
 
         return getVoxel(pixelCoord);
@@ -215,8 +215,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
 //                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, 50);
-                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
-//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+//                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
+                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
