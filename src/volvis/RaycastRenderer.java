@@ -12,6 +12,7 @@ import gui.TransferFunctionEditor;
 
 import java.awt.geom.Arc2D;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 
@@ -124,42 +125,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int maxVal = 0;
         double[] pixelCoord = new double[3];
 
-        //Getting the original point v_0
-        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter);
-        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter);
-        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter);
+        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
-        //Find 6 intersections
-        double[] k = new double[6];
-
-        k[0] = viewVec[0] == 0 ? - pixelCoord[0] / viewVec[0] : Double.MAX_VALUE;
-        k[1] = viewVec[1] == 0 ? - pixelCoord[1] / viewVec[1] : Double.MAX_VALUE;
-        k[2] = viewVec[2] == 0 ? - pixelCoord[2] / viewVec[2] : Double.MAX_VALUE;
-        k[3] = viewVec[0] == 0 ? (volume.getDimX() - pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
-        k[4] = viewVec[0] == 0 ? (volume.getDimY() - pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
-        k[5] = viewVec[0] == 0 ? (volume.getDimZ() - pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
-
-        //Extract 2 nearest intersection points
-        double kMin = Double.MAX_VALUE, kSecondMin = Double.MAX_VALUE;
-        for (int t = 0; t < 6; ++t) {
-            if (k[t] < kMin) kMin = k[t];
-        }
-
-        for (int t = 0; t < 6; ++t) {
-            if (k[t] < kSecondMin && k[t] > kMin) kSecondMin = k[t];
-        }
-
-        for (int t = (int) kMin; t < (int) kSecondMin; ++t) {
+        for (int t = traversalRange[0]; t <= traversalRange[1]; ++t) {
 
             double[] currentPosition = new double[3];
             VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
 
-            pixelCoord[0] +=
-                    + volumeCenter[0];
-            pixelCoord[1] +=
-                    + volumeCenter[1];
-            pixelCoord[2] +=
-                    + volumeCenter[2];
+            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                    + currentPosition[0];
+            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                    + currentPosition[1];
+            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                    + currentPosition[2];
 
             int val = getVoxel(pixelCoord);
 //            System.out.println(maxVal);
@@ -167,6 +145,47 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
 
         return maxVal;
+    }
+
+    int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
+        double[] pixelCoord = new double[3];
+
+        //Getting the original point v_0
+        pixelCoord[0] = uVec[0] * (i) + vVec[0] * (j);
+        pixelCoord[1] = uVec[1] * (i) + vVec[1] * (j);
+        pixelCoord[2] = uVec[2] * (i) + vVec[2] * (j);
+
+        //Find 6 intersections
+        double[] k = new double[6];
+
+        k[0] = viewVec[0] != 0 ? (-pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
+        k[1] = viewVec[1] != 0 ? (-pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
+        k[2] = viewVec[2] != 0 ? (-pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
+        k[3] = viewVec[0] != 0 ? ((volume.getDimX() - pixelCoord[0] ) / viewVec[0]) : Double.MAX_VALUE;
+        k[4] = viewVec[1] != 0 ? ((volume.getDimY() - pixelCoord[1] ) / viewVec[1]) : Double.MAX_VALUE;
+        k[5] = viewVec[2] != 0 ? ((volume.getDimZ() - pixelCoord[2] ) / viewVec[2]) : Double.MAX_VALUE;
+
+        //Check for the valid intersections (which are inside the volume)
+        ArrayList<Integer> intersections = new ArrayList<>();
+        for (int t = 0; t < 6; ++t) {
+            if (k[t] == Double.MAX_VALUE) continue;
+
+            double[] p = new double[3];
+            p[0] = pixelCoord[0] + k[t] * viewVec[0] ;
+            p[1] = pixelCoord[1] + k[t] * viewVec[1] ;
+            p[2] = pixelCoord[2] + k[t] * viewVec[2] ;
+
+            if (p[0] >= - volume.getDimX() / 2 && p[0] <= volume.getDimX() / 2 &&
+                    p[1] >= - volume.getDimY() / 2 && p[1] <= volume.getDimY() / 2 &&
+                    p[2] >= - volume.getDimZ() / 2 && p[2] <= volume.getDimZ() / 2) {
+                intersections.add((int)Math.ceil(k[t]));
+            }
+        }
+
+        int[] results = new int[2];
+        results[0] = intersections.size() > 0 ? intersections.get(0) : 0;
+        results[1] = intersections.size() > 1 ? intersections.get(1) : 0;
+        return results;
     }
 
     //Original method (Center Slice)
@@ -211,12 +230,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
         double max = volume.getMaximum();
         TFColor voxelColor = new TFColor();
+        int diagonal = (int)Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY()  );
 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-//                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, 50);
+                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
 //                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
-                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
