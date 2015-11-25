@@ -85,8 +85,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     short getVoxel(double[] coord) {
 
-        if (coord[0] < 0 || coord[0] > volume.getDimX() || coord[1] < 0 || coord[1] > volume.getDimY()
-                || coord[2] < 0 || coord[2] > volume.getDimZ()) {
+        if (coord[0] <= 0 || coord[0] >= volume.getDimX() || coord[1] <= 0 || coord[1] >= volume.getDimY()
+                || coord[2] <= 0 || coord[2] >= volume.getDimZ()) {
             return 0;
         }
 
@@ -127,6 +127,14 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
+        //swap the 2 points if they are not in the correct order
+        if (traversalRange[0] > traversalRange[1]) {
+            int temp = traversalRange[0];
+            traversalRange[0] = traversalRange[1];
+            traversalRange[1] = temp;
+
+        }
+
         for (int t = traversalRange[0]; t <= traversalRange[1]; ++t) {
 
             double[] currentPosition = new double[3];
@@ -151,22 +159,23 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double[] pixelCoord = new double[3];
 
         //Getting the original point v_0
-        pixelCoord[0] = uVec[0] * (i) + vVec[0] * (j);
-        pixelCoord[1] = uVec[1] * (i) + vVec[1] * (j);
-        pixelCoord[2] = uVec[2] * (i) + vVec[2] * (j);
+        pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter);
+        pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter);
+        pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter);
 
         //Find 6 intersections
         double[] k = new double[6];
 
-        k[0] = viewVec[0] != 0 ? (-pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
-        k[1] = viewVec[1] != 0 ? (-pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
-        k[2] = viewVec[2] != 0 ? (-pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
-        k[3] = viewVec[0] != 0 ? ((volume.getDimX() - pixelCoord[0] ) / viewVec[0]) : Double.MAX_VALUE;
-        k[4] = viewVec[1] != 0 ? ((volume.getDimY() - pixelCoord[1] ) / viewVec[1]) : Double.MAX_VALUE;
-        k[5] = viewVec[2] != 0 ? ((volume.getDimZ() - pixelCoord[2] ) / viewVec[2]) : Double.MAX_VALUE;
+        k[0] = viewVec[0] != 0 ? (-volume.getDimX() / 2 -pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
+        k[1] = viewVec[1] != 0 ? (-volume.getDimY() / 2 -pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
+        k[2] = viewVec[2] != 0 ? (-volume.getDimZ() / 2 -pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
+        k[3] = viewVec[0] != 0 ? ((volume.getDimX() / 2 - pixelCoord[0] ) / viewVec[0]) : Double.MAX_VALUE;
+        k[4] = viewVec[1] != 0 ? ((volume.getDimY() / 2 - pixelCoord[1] ) / viewVec[1]) : Double.MAX_VALUE;
+        k[5] = viewVec[2] != 0 ? ((volume.getDimZ() / 2 - pixelCoord[2] ) / viewVec[2]) : Double.MAX_VALUE;
 
         //Check for the valid intersections (which are inside the volume)
-        ArrayList<Integer> intersections = new ArrayList<>();
+        int[] intersections = new int[2];
+        int count = 0;
         for (int t = 0; t < 6; ++t) {
             if (k[t] == Double.MAX_VALUE) continue;
 
@@ -175,17 +184,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             p[1] = pixelCoord[1] + k[t] * viewVec[1] ;
             p[2] = pixelCoord[2] + k[t] * viewVec[2] ;
 
-            if (p[0] >= - volume.getDimX() / 2 && p[0] <= volume.getDimX() / 2 &&
-                    p[1] >= - volume.getDimY() / 2 && p[1] <= volume.getDimY() / 2 &&
-                    p[2] >= - volume.getDimZ() / 2 && p[2] <= volume.getDimZ() / 2) {
-                intersections.add((int)Math.ceil(k[t]));
+            if (p[0] >= -volume.getDimX() / 2 && p[0] <= volume.getDimX() / 2 &&
+                    p[1] >= -volume.getDimY() / 2 && p[1] <= volume.getDimY() / 2 &&
+                    p[2] >= -volume.getDimZ() / 2 && p[2] <= volume.getDimZ() / 2) {
+                intersections[count] = ((int)Math.ceil(k[t]));
+                count ++;
             }
         }
 
-        int[] results = new int[2];
-        results[0] = intersections.size() > 0 ? intersections.get(0) : 0;
-        results[1] = intersections.size() > 1 ? intersections.get(1) : 0;
-        return results;
+        return intersections;
     }
 
     //Original method (Center Slice)
@@ -234,9 +241,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
+//                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
 //                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
-//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
