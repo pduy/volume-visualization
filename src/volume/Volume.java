@@ -53,7 +53,7 @@ public class Volume {
         double[] x2 = new double[3];
         VectorMath.setVector(x2, xFloor, yFloor, zCeiling);
         double[] x3 = new double[3];
-        VectorMath.setVector(x3, xCeiling, xFloor, zCeiling);
+        VectorMath.setVector(x3, xCeiling, yFloor, zCeiling);
         double[] x4 = new double[3];
         VectorMath.setVector(x4, xFloor, yCeiling, zFloor);
         double[] x5 = new double[3];
@@ -64,9 +64,9 @@ public class Volume {
         VectorMath.setVector(x7, xCeiling, yCeiling, zCeiling);
 
         //Alpha, beta. gamma
-        double alpha = Math.abs((x - xFloor) / (x - xCeiling));
-        double beta = Math.abs((z - zFloor) / (z - zCeiling));
-        double gamma = Math.abs((y - yFloor) / (y - yCeiling));
+        double alpha = (x - xCeiling) == 0 ? 1 : Math.abs((x - xFloor) / (x - xCeiling));
+        double beta = (z - zCeiling) == 0 ? 1 : Math.abs((z - zFloor) / (z - zCeiling));
+        double gamma = (y - yCeiling) == 0 ? 1 : Math.abs((y - yFloor) / (y - yCeiling));
 
         //Find 8 intensities
         double sX0 = 1.0 * data[(int)x0[0] + dimX * ((int)x0[1] + dimY * (int)x0[2])];
@@ -78,6 +78,8 @@ public class Volume {
         double sX6 = 1.0 * data[(int)x6[0] + dimX * ((int)x6[1] + dimY * (int)x6[2])];
         double sX7 = 1.0 * data[(int)x7[0] + dimX * ((int)x7[1] + dimY * (int)x7[2])];
 
+        System.out.println(x2[0] + dimX * x2[1] + dimY * x2[2]);
+        System.out.println(data.length);
 
         return (short)((1 - alpha) * (1 - beta) * (1 - gamma) * sX0 +
                 alpha * (1 - beta) * (1 - gamma) * sX1 +

@@ -91,11 +91,11 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             return 0;
         }
 
-        int x = (int) Math.floor(coord[0]);
-        int y = (int) Math.floor(coord[1]);
-        int z = (int) Math.floor(coord[2]);
+//        int x = (int) Math.floor(coord[0]);
+//        int y = (int) Math.floor(coord[1]);
+//        int z = (int) Math.floor(coord[2]);
 
-        return volume.getVoxel(x, y, z);
+        return volume.getVoxel(coord[0], coord[1], coord[2]);
     }
 
     //MIP approach by brute force
