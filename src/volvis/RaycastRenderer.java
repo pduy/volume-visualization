@@ -28,6 +28,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     private Volume volume = null;
     private GradientVolume gradients = null;
+    public String rendererType = "slicer";
     RaycastRendererPanel panel;
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
