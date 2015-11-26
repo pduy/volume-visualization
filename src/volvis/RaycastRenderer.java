@@ -243,7 +243,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return getVoxel(pixelCoord);
     }
 
-    void slicer(double[] viewMatrix) {
+    void render(double[] viewMatrix) {
 
         // clear image
         for (int j = 0; j < image.getHeight(); j++) {
@@ -269,23 +269,47 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 //        System.out.println(volume.getDimX() + " " + volume.getDimY() + " " + volume.getDimZ());
 
         // sample on a plane through the origin of the volume data
-        double max = volume.getMaximum();
+
         TFColor voxelColor = new TFColor();
         int diagonal = (int)Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY()  );
 
-        for (int j = 0; j < image.getHeight(); ++j) {
-            for (int i = 0; i < image.getWidth(); ++i) {
-                int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
-                if (max < val) max = val;
-            }
+        //Calculating max
+        double max = 0;
+        switch (this.rendererType) {
+            case "compositing":
+                for (int j = 0; j < image.getHeight(); ++j) {
+                    for (int i = 0; i < image.getWidth(); ++i) {
+                        int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                        if (max < val) max = val;
+                    }
+                }
+                break;
+            case "MIP":
+            case "slicer":
+                max = volume.getMaximum();
+                break;
+            default:
+                break;
         }
+
+
 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
-//                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
-//                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
-//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
-                int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                int val;
+
+                switch (this.rendererType) {
+                    case "MIP":
+                        //                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
+                        val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                        break;
+                    case "compositing":
+                        val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                        break;
+                    case "slicer":
+                    default:
+                        val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
+                }
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
@@ -381,7 +405,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, viewMatrix, 0);
 
         long startTime = System.currentTimeMillis();
-        slicer(viewMatrix);
+        render(viewMatrix);
 
         long endTime = System.currentTimeMillis();
         double runningTime = (endTime - startTime);
