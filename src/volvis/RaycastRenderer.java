@@ -155,6 +155,39 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return maxVal;
     }
 
+    int getValueByCompositing(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
+        int totalVal = 0;
+        double[] pixelCoord = new double[3];
+
+        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+
+        //swap the 2 points if they are not in the correct order
+        if (traversalRange[0] > traversalRange[1]) {
+            int temp = traversalRange[0];
+            traversalRange[0] = traversalRange[1];
+            traversalRange[1] = temp;
+
+        }
+
+        for (int t = traversalRange[0]; t <= traversalRange[1]; ++t) {
+
+            double[] currentPosition = new double[3];
+            VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
+
+            pixelCoord[0] = uVec[0] * (i - imageCenter) + vVec[0] * (j - imageCenter)
+                    + currentPosition[0];
+            pixelCoord[1] = uVec[1] * (i - imageCenter) + vVec[1] * (j - imageCenter)
+                    + currentPosition[1];
+            pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
+                    + currentPosition[2];
+
+            int val = getVoxel(pixelCoord);
+            totalVal += val;
+        }
+
+        return totalVal ;
+    }
+
     int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
@@ -239,11 +272,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         TFColor voxelColor = new TFColor();
         int diagonal = (int)Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY()  );
 
+        for (int j = 0; j < image.getHeight(); ++j) {
+            for (int i = 0; i < image.getWidth(); ++i) {
+                int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                if (max < val) max = val;
+            }
+        }
+
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
 //                int val = getValueByBruteForce(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, diagonal);
 //                int val = getValueByCenter(i, j, uVec, vVec, volumeCenter, imageCenter);
-                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+//                int val = getValueByFindingIntersections(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
 
                 // Map the intensity to a grey value by linear scaling
                 voxelColor.r = val / max;
