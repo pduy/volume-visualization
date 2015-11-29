@@ -45,43 +45,46 @@ public class Volume {
         int zFloor = (int) Math.floor(z);
         int zCeiling = (int) Math.ceil(z);
 
-        //Find 8 corner points
-        double[] x0 = new double[3];
-        VectorMath.setVector(x0, xFloor, yFloor, zFloor);
-        double[] x1 = new double[3];
-        VectorMath.setVector(x1, xCeiling, yFloor, zFloor);
-        double[] x2 = new double[3];
-        VectorMath.setVector(x2, xFloor, yFloor, zCeiling);
-        double[] x3 = new double[3];
-        VectorMath.setVector(x3, xCeiling, yFloor, zCeiling);
-        double[] x4 = new double[3];
-        VectorMath.setVector(x4, xFloor, yCeiling, zFloor);
-        double[] x5 = new double[3];
-        VectorMath.setVector(x5, xCeiling, yCeiling, zFloor);
-        double[] x6 = new double[3];
-        VectorMath.setVector(x6, xFloor, yCeiling, zCeiling);
-        double[] x7 = new double[3];
-        VectorMath.setVector(x7, xCeiling, yCeiling, zCeiling);
-
         //Alpha, beta. gamma
-        double alpha = (x - xCeiling) == 0 ? 1 : Math.abs((x - xFloor) / (x - xCeiling));
-        double beta = (z - zCeiling) == 0 ? 1 : Math.abs((z - zFloor) / (z - zCeiling));
-        double gamma = (y - yCeiling) == 0 ? 1 : Math.abs((y - yFloor) / (y - yCeiling));
+        double alpha = (xCeiling - xFloor) == 0 ? 1 : (x - xFloor) / (xCeiling - xFloor);
+        double beta = (zCeiling - zFloor) == 0 ? 1 : (z - zFloor) / (zCeiling - zFloor);
+        double gamma = (yCeiling - yFloor) == 0 ? 1 : (y - yFloor) / (yCeiling - yFloor);
 
+        int yzFloor = yFloor + dimY * zFloor;
+        int yFloorZCeiling = yFloor + dimY * zCeiling;
+        int yCeilingZFloor = yCeiling + dimY * zFloor;
+        int yzCeiling = yCeiling + dimY * zCeiling;
+
+        int sX0Index = xFloor + dimX * yzFloor;
+        int sX1Index = xCeiling + dimX * yzFloor;
+        int sX2Index = xFloor + dimX * yFloorZCeiling;
+        int sX3Index = xCeiling + dimX * yFloorZCeiling;
+        int sX4Index = xFloor + dimX * yCeilingZFloor;
+        int sX5Index = xCeiling + dimX * yCeilingZFloor;
+        int sX6Index = xFloor + dimX * yzCeiling;
+        int sX7Index = xCeiling + dimX * yzCeiling;
+
+        if (sX0Index >= data.length ||
+                sX1Index >= data.length ||
+                sX2Index >= data.length ||
+                sX3Index >= data.length ||
+                sX4Index >= data.length ||
+                sX5Index >= data.length ||
+                sX6Index >= data.length ||
+                sX7Index >= data.length) {
+            return 0;
+        }
         //Find 8 intensities
-        double sX0 = 1.0 * data[(int)x0[0] + dimX * ((int)x0[1] + dimY * (int)x0[2])];
-        double sX1 = 1.0 * data[(int)x1[0] + dimX * ((int)x1[1] + dimY * (int)x1[2])];
-        double sX2 = 1.0 * data[(int)x2[0] + dimX * ((int)x2[1] + dimY * (int)x2[2])];
-        double sX3 = 1.0 * data[(int)x3[0] + dimX * ((int)x3[1] + dimY * (int)x3[2])];
-        double sX4 = 1.0 * data[(int)x4[0] + dimX * ((int)x4[1] + dimY * (int)x4[2])];
-        double sX5 = 1.0 * data[(int)x5[0] + dimX * ((int)x5[1] + dimY * (int)x5[2])];
-        double sX6 = 1.0 * data[(int)x6[0] + dimX * ((int)x6[1] + dimY * (int)x6[2])];
-        double sX7 = 1.0 * data[(int)x7[0] + dimX * ((int)x7[1] + dimY * (int)x7[2])];
+        double sX0 = 1.0 * data[sX0Index];
+        double sX1 = 1.0 * data[sX1Index];
+        double sX2 = 1.0 * data[sX2Index];
+        double sX3 = 1.0 * data[sX3Index];
+        double sX4 = 1.0 * data[sX4Index];
+        double sX5 = 1.0 * data[sX5Index];
+        double sX6 = 1.0 * data[sX6Index];
+        double sX7 = 1.0 * data[sX7Index];
 
-        System.out.println(x2[0] + dimX * x2[1] + dimY * x2[2]);
-        System.out.println(data.length);
-
-        return (short)((1 - alpha) * (1 - beta) * (1 - gamma) * sX0 +
+        return (short) ((1 - alpha) * (1 - beta) * (1 - gamma) * sX0 +
                 alpha * (1 - beta) * (1 - gamma) * sX1 +
                 (1 - alpha) * beta * (1 - gamma) * sX2 +
                 alpha * beta * (1 - gamma) * sX3 +
