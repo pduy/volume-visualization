@@ -10,11 +10,7 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 
-import java.awt.geom.Arc2D;
-import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 
@@ -158,38 +154,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         return maxVal;
     }
 
-    TFColor getValueByCompositing(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
-        List<double[]> pixels = extractPixelList(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
-
-        double alpha = 1;
-        for (int u = pixels.size() - 1; u >= 0; --u) {
-            TFColor color = tFunc.getColor(getVoxel(pixels.get(u)));
-            alpha *= 1 - color.a;
-            System.out.println(color.a + " " + alpha);
-        }
-
-        TFColor color = composite(pixels);
-//        color.a = 1 - alpha;
-        return new TFColor(color.r, color.g, color.b, 1 - alpha);
-    }
-
-    TFColor composite(List<double[]> pixels) {
-        double[] currentPixel = pixels.remove(0);
-        int val = getVoxel(currentPixel);
-        TFColor currentColor = tFunc.getColor(val);
-
-        if (pixels.isEmpty()) return new TFColor(currentColor.a * currentColor.r, currentColor.a * currentColor.g, currentColor.a * currentColor.b, currentColor.a);
-
-        TFColor previousColor = composite(pixels);
-        double r = currentColor.a * currentColor.r + (1 - currentColor.a) * previousColor.r;
-        double g = currentColor.a * currentColor.g + (1 - currentColor.a) * previousColor.b;
-        double b = currentColor.a * currentColor.b + (1 - currentColor.a) * previousColor.g;
-
-        return new TFColor(r, g, b, currentColor.a);
-    }
-
-    ArrayList<double[]> extractPixelList(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
-        ArrayList<double[]> results = new ArrayList<>();
+    TFColor getColorByCompositing(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
         int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
@@ -202,8 +167,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         }
 
-        for (int t = traversalRange[0]; t <= traversalRange[1]; ++t) {
+        TFColor tempColor = new TFColor(0, 0, 0, 1);
+        for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
 
+            //Get the current pixel
             double[] currentPosition = new double[3];
             VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
 
@@ -214,10 +181,19 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             pixelCoord[2] = uVec[2] * (i - imageCenter) + vVec[2] * (j - imageCenter)
                     + currentPosition[2];
 
-            results.add(pixelCoord);
+            //Extract color
+            int val = getVoxel(pixelCoord);
+            TFColor pixelColor = tFunc.getColor(val);
+
+            tempColor.a = 1 - pixelColor.a * tempColor.a;
+            tempColor.r = pixelColor.a * pixelColor.r + (1 - pixelColor.a) * tempColor.r;
+            tempColor.g = pixelColor.a * pixelColor.g + (1 - pixelColor.a) * tempColor.g;
+            tempColor.b = pixelColor.a * pixelColor.b + (1 - pixelColor.a) * tempColor.b;
+
         }
 
-        return results;
+        return tempColor;
+
     }
 
     int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
@@ -231,12 +207,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Find 6 intersections
         double[] k = new double[6];
 
-        k[0] = viewVec[0] != 0 ? (-volume.getDimX() / 2 -pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
-        k[1] = viewVec[1] != 0 ? (-volume.getDimY() / 2 -pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
-        k[2] = viewVec[2] != 0 ? (-volume.getDimZ() / 2 -pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
-        k[3] = viewVec[0] != 0 ? ((volume.getDimX() / 2 - pixelCoord[0] ) / viewVec[0]) : Double.MAX_VALUE;
-        k[4] = viewVec[1] != 0 ? ((volume.getDimY() / 2 - pixelCoord[1] ) / viewVec[1]) : Double.MAX_VALUE;
-        k[5] = viewVec[2] != 0 ? ((volume.getDimZ() / 2 - pixelCoord[2] ) / viewVec[2]) : Double.MAX_VALUE;
+        k[0] = viewVec[0] != 0 ? (-volume.getDimX() / 2 - pixelCoord[0]) / viewVec[0] : Double.MAX_VALUE;
+        k[1] = viewVec[1] != 0 ? (-volume.getDimY() / 2 - pixelCoord[1]) / viewVec[1] : Double.MAX_VALUE;
+        k[2] = viewVec[2] != 0 ? (-volume.getDimZ() / 2 - pixelCoord[2]) / viewVec[2] : Double.MAX_VALUE;
+        k[3] = viewVec[0] != 0 ? ((volume.getDimX() / 2 - pixelCoord[0]) / viewVec[0]) : Double.MAX_VALUE;
+        k[4] = viewVec[1] != 0 ? ((volume.getDimY() / 2 - pixelCoord[1]) / viewVec[1]) : Double.MAX_VALUE;
+        k[5] = viewVec[2] != 0 ? ((volume.getDimZ() / 2 - pixelCoord[2]) / viewVec[2]) : Double.MAX_VALUE;
 
         //Check for the valid intersections (which are inside the volume)
         int[] intersections = new int[2];
@@ -245,15 +221,15 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             if (k[t] == Double.MAX_VALUE) continue;
 
             double[] p = new double[3];
-            p[0] = pixelCoord[0] + k[t] * viewVec[0] ;
-            p[1] = pixelCoord[1] + k[t] * viewVec[1] ;
-            p[2] = pixelCoord[2] + k[t] * viewVec[2] ;
+            p[0] = pixelCoord[0] + k[t] * viewVec[0];
+            p[1] = pixelCoord[1] + k[t] * viewVec[1];
+            p[2] = pixelCoord[2] + k[t] * viewVec[2];
 
             if (p[0] >= -volume.getDimX() / 2 && p[0] <= volume.getDimX() / 2 &&
                     p[1] >= -volume.getDimY() / 2 && p[1] <= volume.getDimY() / 2 &&
                     p[2] >= -volume.getDimZ() / 2 && p[2] <= volume.getDimZ() / 2) {
-                intersections[count] = ((int)Math.ceil(k[t]));
-                count ++;
+                intersections[count] = ((int) Math.ceil(k[t]));
+                count++;
             }
         }
 
@@ -302,7 +278,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         // sample on a plane through the origin of the volume data
 
         TFColor voxelColor = new TFColor();
-        int diagonal = (int)Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY()  );
+        int diagonal = (int) Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY());
 
         //Calculating max
         double max = 0;
@@ -340,7 +316,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
                         break;
                     case "compositing":
-                        voxelColor = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+                        voxelColor = getColorByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
                         // Alternatively, apply the transfer function to obtain a color
                         // voxelColor = tFunc.getColor(val);
                         break;
@@ -353,7 +329,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         voxelColor.b = voxelColor.r;
                         voxelColor.a = val > 0 ? 1.0 : 0.0;  // this makes intensity 0 completely transparent and the rest opaque
                 }
-
 
 
                 // BufferedImage expects a pixel color packed as ARGB in an int
