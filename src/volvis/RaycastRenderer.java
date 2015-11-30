@@ -73,6 +73,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         System.out.println("Finished initialization of RaycastRenderer");
     }
 
+    public Volume getVolume() {
+        return volume;
+    }
+
     public RaycastRendererPanel getPanel() {
         return panel;
     }

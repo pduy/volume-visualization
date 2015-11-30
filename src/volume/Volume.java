@@ -41,13 +41,12 @@ public class Volume {
         if (interpolate) {
             return(getVoxelWithInterpolation(x, y, z));
         } else {
-            short ret;
             try {
-                ret = data[x + dimX * (y + dimY * z)];
+                // or should I floor x,y,z here?
+                return data[(int)x + (int)dimX * ((int)y + (int)dimY * (int)z)];
             } catch (ArrayIndexOutOfBoundsException e) {
-                ret = 0;
+                return 0;
             }
-            return ret;
         }
     }
 

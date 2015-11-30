@@ -167,9 +167,9 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
 
     private void interpolationCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_interpolationCheckboxActionPerformed
         if (interpolationCheckbox.isSelected()) {
-            this.renderer.interpolate = true;
+            this.renderer.getVolume().interpolate = true;
         } else {
-            this.renderer.interpolate = false;
+            this.renderer.getVolume().interpolate = false;
         }
         this.renderer.changed();
     }//GEN-LAST:event_interpolationCheckboxActionPerformed
