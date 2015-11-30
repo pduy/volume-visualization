@@ -16,7 +16,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     RaycastRenderer renderer;
     TransferFunctionEditor tfEditor = null;
     TransferFunction2DEditor tfEditor2D = null;
-    
+
     /**
      * Creates new form RaycastRendererPanel
      */
@@ -47,6 +47,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         compositingButton = new javax.swing.JRadioButton();
         tf2dButton = new javax.swing.JRadioButton();
         shadingCheckbox = new javax.swing.JCheckBox();
+        interpolationCheckbox = new javax.swing.JCheckBox();
 
         jLabel1.setText("Rendering time (ms):");
 
@@ -92,6 +93,13 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
             }
         });
 
+        interpolationCheckbox.setText("Tri-linear interpolation");
+        interpolationCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                interpolationCheckboxActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -108,7 +116,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
                         .addComponent(tf2dButton)
                         .addComponent(mipButton)
                         .addComponent(slicerButton)
-                        .addComponent(shadingCheckbox)))
+                        .addComponent(shadingCheckbox)
+                        .addComponent(interpolationCheckbox)))
                 .addContainerGap(339, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -128,6 +137,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
                 .addComponent(tf2dButton)
                 .addGap(18, 18, 18)
                 .addComponent(shadingCheckbox)
+                .addComponent(interpolationCheckbox)
                 .addContainerGap(137, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -155,6 +165,15 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         JOptionPane.showMessageDialog(this, "Not implemented.");
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
+    private void interpolationCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_interpolationCheckboxActionPerformed
+        if (interpolationCheckbox.isSelected()) {
+            this.renderer.interpolate = true;
+        } else {
+            this.renderer.interpolate = false;
+        }
+        this.renderer.changed();
+    }//GEN-LAST:event_interpolationCheckboxActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JRadioButton compositingButton;
@@ -162,6 +181,7 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     private javax.swing.JRadioButton mipButton;
     private javax.swing.JLabel renderingSpeedLabel;
     private javax.swing.JCheckBox shadingCheckbox;
+    private javax.swing.JCheckBox interpolationCheckbox;
     private javax.swing.JRadioButton slicerButton;
     private javax.swing.JRadioButton tf2dButton;
     // End of variables declaration//GEN-END:variables

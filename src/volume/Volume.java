@@ -13,6 +13,7 @@ import java.io.IOException;
  * @author michel
  */
 public class Volume {
+    public boolean interpolate = false;
 
     public Volume(int xd, int yd, int zd) {
         data = new short[xd * yd * zd];
@@ -36,8 +37,21 @@ public class Volume {
 
     }
 
-
     public short getVoxel(double x, double y, double z) {
+        if (interpolate) {
+            return(getVoxelWithInterpolation(x, y, z));
+        } else {
+            short ret;
+            try {
+                ret = data[x + dimX * (y + dimY * z)];
+            } catch (ArrayIndexOutOfBoundsException e) {
+                ret = 0;
+            }
+            return ret;
+        }
+    }
+
+    public short getVoxelWithInterpolation(double x, double y, double z) {
         int xFloor = (int) Math.floor(x);
         int xCeiling = (int) Math.ceil(x);
         int yFloor = (int) Math.floor(y);
