@@ -178,11 +178,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int val = getVoxel(currentPixel);
         TFColor currentColor = tFunc.getColor(val);
 
-//        if (pixels.isEmpty()) return new TFColor(currentColor.a * currentColor.r, currentColor.a * currentColor.g, currentColor.a * currentColor.b, currentColor.a);
-        if (pixels.isEmpty()) return currentColor;
+        if (pixels.isEmpty()) return new TFColor(currentColor.a * currentColor.r, currentColor.a * currentColor.g, currentColor.a * currentColor.b, currentColor.a);
 
         TFColor previousColor = composite(pixels);
-//        double alpha = (1 - currentColor.a) * previousColor.a;
         double r = currentColor.a * currentColor.r + (1 - currentColor.a) * previousColor.r;
         double g = currentColor.a * currentColor.g + (1 - currentColor.a) * previousColor.b;
         double b = currentColor.a * currentColor.b + (1 - currentColor.a) * previousColor.g;
@@ -325,7 +323,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 //            default:
 //                break;
 //        }
-
 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
