@@ -52,10 +52,20 @@ public class GradientVolume {
     private void compute() {
 
         // this just initializes all gradients to the vector (0,0,0)
-        for (int i=0; i<data.length; i++) {
-            data[i] = zero;
+//        for (int i=0; i<data.length; i++) {
+//            data[i] = zero;
+//        }
+
+        for (int x = 0; x < dimX; ++x) {
+            for (int y = 0; y < dimY; ++y) {
+                for (int z = 0; z < dimZ; ++z) {
+                    int i = x + dimX * (y + dimY * z);
+                    data[i] = new VoxelGradient((float) 0.5 * volume.getVoxel(x + 1) - volume.getVoxel(x - 1),
+                            (float) 0.5 * volume.getVoxel(y + 1) - volume.getVoxel(y - 1),
+                            (float) 0.5 * volume.getVoxel(z + 1) - volume.getVoxel(z - 1));
+                }
+            }
         }
-                
     }
     
     public double getMaxGradientMagnitude() {
