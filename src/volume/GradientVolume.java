@@ -34,6 +34,9 @@ public class GradientVolume {
     }
 
     public VoxelGradient getVoxel(int i) {
+        if (i >= dimX * dimY * dimZ) {
+            return new VoxelGradient();
+        }
         return data[i];
     }
 
@@ -60,9 +63,9 @@ public class GradientVolume {
             for (int y = 0; y < dimY; ++y) {
                 for (int z = 0; z < dimZ; ++z) {
                     int i = x + dimX * (y + dimY * z);
-                    data[i] = new VoxelGradient((float) 0.5 * volume.getVoxel(x + 1) - volume.getVoxel(x - 1),
-                            (float) 0.5 * volume.getVoxel(y + 1) - volume.getVoxel(y - 1),
-                            (float) 0.5 * volume.getVoxel(z + 1) - volume.getVoxel(z - 1));
+                    data[i] = new VoxelGradient(0.5f * (volume.getVoxel(x + 1, y, z) - volume.getVoxel(x - 1, y, z)),
+                            0.5f * (volume.getVoxel(x, y + 1, z) - volume.getVoxel(x, y - 1, z)),
+                            0.5f * (volume.getVoxel(x, y, z + 1) - volume.getVoxel(x, y, z - 1)));
                 }
             }
         }
