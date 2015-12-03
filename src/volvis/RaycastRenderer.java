@@ -31,7 +31,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TransferFunction tFunc;
     TransferFunctionEditor tfEditor;
     TransferFunction2DEditor tfEditor2D;
-    private double[] alphas;
 
     public RaycastRenderer() {
         panel = new RaycastRendererPanel(this);
@@ -66,7 +65,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         tfEditor2D = new TransferFunction2DEditor(volume, gradients);
         tfEditor2D.addTFChangeListener(this);
-        alphas = computeAlpha();
+//        alphas = computeAlpha();
 
         System.out.println("Finished initialization of RaycastRenderer");
     }
@@ -94,10 +93,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 || coord[2] <= 0 || coord[2] >= volume.getDimZ()) {
             return 0;
         }
-
-//        int x = (int) Math.floor(coord[0]);
-//        int y = (int) Math.floor(coord[1]);
-//        int z = (int) Math.floor(coord[2]);
 
         return volume.getVoxel(coord[0], coord[1], coord[2]);
     }
@@ -130,7 +125,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         int maxVal = 0;
         double[] pixelCoord = new double[3];
 
-        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, imageCenter);
 
         //swap the 2 points if they are not in the correct order
         if (traversalRange[0] > traversalRange[1]) {
@@ -163,7 +158,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
     TFColor getColorByCompositing(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
-        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, imageCenter);
 
         //swap the 2 points if they are not in the correct order
         if (traversalRange[0] > traversalRange[1]) {
@@ -202,10 +197,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     }
 
-    TFColor getColorBy2DTransferFunction(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter, double[] alphas) {
+    TFColor getColorBy2DTransferFunction(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
 
-        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
+        int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, imageCenter);
 
         //swap the 2 points if they are not in the correct order
         if (traversalRange[0] > traversalRange[1]) {
@@ -231,46 +226,33 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
             //Extract color
             TFColor pixelColor = tfEditor2D.triangleWidget.color;
-            int index = (int) (pixelCoord[0] + volume.getDimX() * (pixelCoord[1] + volume.getDimY() * pixelCoord[2]));
-            if (index >= alphas.length) index = alphas.length - 1;
-            if (index < 0) index = 0;
 
-            tempColor.a = 1 - alphas[index] * tempColor.a;
-            tempColor.r = alphas[index] * pixelColor.r + (1 - alphas[index]) * tempColor.r;
-            tempColor.g = alphas[index] * pixelColor.g + (1 - alphas[index]) * tempColor.g;
-            tempColor.b = alphas[index] * pixelColor.b + (1 - alphas[index]) * tempColor.b;
+            double alpha = 0;
+            double r = tfEditor2D.triangleWidget.radius;
+            int fv = tfEditor2D.triangleWidget.baseIntensity;
+            double av = tfEditor2D.triangleWidget.color.a;
+            double fi = getVoxel(pixelCoord);
+            float deltaFi = gradients.getGradient((int)pixelCoord[0], (int)pixelCoord[1], (int)pixelCoord[2]).mag;
+
+            if (deltaFi == 0 && fi == fv) {
+                alpha = av;
+            } else if (deltaFi > 0 && fi - r * deltaFi <= fv && fi + r * deltaFi >= fv)  {
+                alpha = av * (1 - Math.abs(fv - fi) / (r * deltaFi));
+            } else {
+                alpha = 0;
+            }
+
+            tempColor.a = 1 - alpha * tempColor.a;
+            tempColor.r = alpha * pixelColor.r + (1 - alpha) * tempColor.r;
+            tempColor.g = alpha * pixelColor.g + (1 - alpha) * tempColor.g;
+            tempColor.b = alpha * pixelColor.b + (1 - alpha) * tempColor.b;
         }
 
         return tempColor;
 
     }
 
-    double[] computeAlpha() {
-        double[] alphas = new double[volume.getDimX() * volume.getDimY() * volume.getDimZ()];
-        int count = 0;
-
-        for (int i = 0; i < alphas.length; ++i) {
-            if (gradients.getVoxel(i).mag == 0
-                    && volume.getVoxel(i) == tfEditor2D.triangleWidget.baseIntensity) {
-                alphas[i] = tfEditor2D.triangleWidget.color.a;
-                count ++;
-            } else if (gradients.getVoxel(i).mag > 0
-                    && volume.getVoxel(i) - tfEditor2D.triangleWidget.radius * gradients.getVoxel(i).mag <= tfEditor2D.triangleWidget.baseIntensity
-                    && volume.getVoxel(i) + tfEditor2D.triangleWidget.radius * gradients.getVoxel(i).mag >= tfEditor2D.triangleWidget.baseIntensity) {
-                alphas[i] = tfEditor2D.triangleWidget.color.a * (1 - (1 / tfEditor2D.triangleWidget.radius)
-                        * Math.abs((tfEditor2D.triangleWidget.baseIntensity - volume.getVoxel(i)) / gradients.getVoxel(i).mag));
-                count ++;
-            } else {
-                alphas[i] = 0;
-            }
-        }
-
-        System.out.println("count > 0  = " + count);
-
-        return alphas;
-    }
-
-    int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
+    int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, int imageCenter) {
         double[] pixelCoord = new double[3];
 
         //Getting the original point v_0
@@ -332,7 +314,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 image.setRGB(i, j, 0);
             }
         }
-        computeAlpha();
+//        computeAlpha();
 
         // vector uVec and vVec define a plane through the origin, 
         // perpendicular to the view vector viewVec
@@ -395,7 +377,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         // voxelColor = tFunc.getColor(val);
                         break;
                     case "tf2d":
-                        voxelColor = getColorBy2DTransferFunction(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter, alphas);
+                        voxelColor = getColorBy2DTransferFunction(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
                         break;
                     case "slicer":
                     default:
@@ -541,9 +523,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     @Override
     public void changed() {
-        System.out.println("Recomputing alphas");
-        computeAlpha();
-        System.out.println("Done");
+//        System.out.println("Recomputing alphas");
+//        computeAlpha();
+//        System.out.println("Done");
 
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).changed();
