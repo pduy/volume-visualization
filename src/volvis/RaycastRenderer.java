@@ -11,6 +11,8 @@ import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import javax.media.opengl.GL;
 import javax.media.opengl.GL2;
 
@@ -24,7 +26,7 @@ import volume.VoxelGradient;
  * @author michel
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
-    private static int BOUNDING_GRADIENT_THRESHOLD = 5;
+    private static int BOUNDING_GRADIENT_THRESHOLD = 15;
 
     private Volume volume = null;
     private GradientVolume gradients = null;
@@ -170,8 +172,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         }
 
-        VoxelGradient maximumGradient = new VoxelGradient();
         TFColor tempColor = new TFColor(0.0, 0.0, 0.0, 1.0);
+        ArrayList<VoxelGradient> boundaryGradCandidates = new ArrayList<>();
         for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
 
             //Get the current pixel
@@ -189,22 +191,21 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             int val = getVoxel(pixelCoord);
             TFColor pixelColor = tFunc.getColor(val);
             VoxelGradient currGradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
-            if (currGradient.mag > maximumGradient.mag && t < traversalRange[1] / 2) {
-                maximumGradient = currGradient;
-            }
 
             tempColor.a = 1 - pixelColor.a * tempColor.a;
             tempColor.r = pixelColor.a * pixelColor.r + (1 - pixelColor.a) * tempColor.r;
             tempColor.g = pixelColor.a * pixelColor.g + (1 - pixelColor.a) * tempColor.g;
             tempColor.b = pixelColor.a * pixelColor.b + (1 - pixelColor.a) * tempColor.b;
 
+            if (currGradient.mag >= BOUNDING_GRADIENT_THRESHOLD) {
+                boundaryGradCandidates.add(new VoxelGradient(currGradient.x, currGradient.y, currGradient.z));
+            }
         }
 
-        TFColor shadeColor = shade(maximumGradient, tempColor, viewVec, 0.1, 0.7, 0.2, 10);
-        if (getVolume().shading && shadeColor != null && maximumGradient.mag > BOUNDING_GRADIENT_THRESHOLD) {
-            tempColor.r = shadeColor.r;
-            tempColor.g = shadeColor.g;
-            tempColor.b = shadeColor.b;
+        if (getVolume().shading && boundaryGradCandidates.size() > 0)  {
+            double oldAlpha = tempColor.a;
+            tempColor = shade(boundaryGradCandidates.get(boundaryGradCandidates.size() - 1), tempColor, viewVec, 0.1, 0.7, 0.2, 10);
+            tempColor.a = oldAlpha;
         }
 
         return tempColor;
@@ -226,7 +227,9 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         }
 
         TFColor tempColor = new TFColor(0.0, 0.0, 0.0, 1.0);
+        ArrayList<VoxelGradient> boundaryGradCandidates = new ArrayList<>();
         for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
+//        for (int t = 100; t >= -200; --t) {
 
             //Get the current pixel
             double[] currentPosition = new double[3];
@@ -252,13 +255,16 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             tempColor.r = alpha * pixelColor.r + (1 - alpha) * tempColor.r;
             tempColor.g = alpha * pixelColor.g + (1 - alpha) * tempColor.g;
             tempColor.b = alpha * pixelColor.b + (1 - alpha) * tempColor.b;
+
+            if (currGradient.mag >= BOUNDING_GRADIENT_THRESHOLD) {
+                boundaryGradCandidates.add(new VoxelGradient(currGradient.x, currGradient.y, currGradient.z));
+            }
         }
 
-        TFColor shadeColor = shade(maximumGradient, tempColor, viewVec, 0.1, 0.7, 0.2, 10);
-        if (getVolume().shading && shadeColor != null && maximumGradient.mag > BOUNDING_GRADIENT_THRESHOLD) {
-            tempColor.r = shadeColor.r;
-            tempColor.g = shadeColor.g;
-            tempColor.b = shadeColor.b;
+        if (getVolume().shading && boundaryGradCandidates.size() > 0) {
+            double oldAlpha = tempColor.a;
+            tempColor = shade(boundaryGradCandidates.get(boundaryGradCandidates.size() - 1), tempColor, viewVec, 0.1, 0.7, 0.2, 10);
+            tempColor.a = oldAlpha;
         }
 
         return tempColor;
