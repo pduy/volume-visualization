@@ -24,6 +24,7 @@ import volume.VoxelGradient;
  * @author michel
  */
 public class RaycastRenderer extends Renderer implements TFChangeListener {
+    private static int BOUNDING_GRADIENT_THRESHOLD = 5;
 
     private Volume volume = null;
     private GradientVolume gradients = null;
@@ -169,6 +170,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         }
 
+        VoxelGradient maximumGradient = new VoxelGradient();
         TFColor tempColor = new TFColor(0.0, 0.0, 0.0, 1.0);
         for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
 
@@ -186,12 +188,23 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             //Extract color
             int val = getVoxel(pixelCoord);
             TFColor pixelColor = tFunc.getColor(val);
+            VoxelGradient currGradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
+            if (currGradient.mag > maximumGradient.mag && t < traversalRange[1] / 2) {
+                maximumGradient = currGradient;
+            }
 
             tempColor.a = 1 - pixelColor.a * tempColor.a;
             tempColor.r = pixelColor.a * pixelColor.r + (1 - pixelColor.a) * tempColor.r;
             tempColor.g = pixelColor.a * pixelColor.g + (1 - pixelColor.a) * tempColor.g;
             tempColor.b = pixelColor.a * pixelColor.b + (1 - pixelColor.a) * tempColor.b;
 
+        }
+
+        TFColor shadeColor = shade(maximumGradient, tempColor, viewVec, 0.1, 0.7, 0.2, 10);
+        if (getVolume().shading && shadeColor != null && maximumGradient.mag > BOUNDING_GRADIENT_THRESHOLD) {
+            tempColor.r = shadeColor.r;
+            tempColor.g = shadeColor.g;
+            tempColor.b = shadeColor.b;
         }
 
         return tempColor;
@@ -241,8 +254,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             tempColor.b = alpha * pixelColor.b + (1 - alpha) * tempColor.b;
         }
 
-        TFColor shadeColor = shade(maximumGradient, tfEditor2D.triangleWidget.color, viewVec, 0.1, 0.7, 0.2, 10);
-        if (getVolume().shading && shadeColor != null && maximumGradient.mag > 10) {
+        TFColor shadeColor = shade(maximumGradient, tempColor, viewVec, 0.1, 0.7, 0.2, 10);
+        if (getVolume().shading && shadeColor != null && maximumGradient.mag > BOUNDING_GRADIENT_THRESHOLD) {
             tempColor.r = shadeColor.r;
             tempColor.g = shadeColor.g;
             tempColor.b = shadeColor.b;
@@ -353,7 +366,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                 image.setRGB(i, j, 0);
             }
         }
-//        computeAlpha();
 
         // vector uVec and vVec define a plane through the origin, 
         // perpendicular to the view vector viewVec
@@ -369,31 +381,13 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         double[] volumeCenter = new double[3];
         VectorMath.setVector(volumeCenter, volume.getDimX() / 2, volume.getDimY() / 2, volume.getDimZ() / 2);
-//        System.out.println(volume.getDimX() + " " + volume.getDimY() + " " + volume.getDimZ());
 
         // sample on a plane through the origin of the volume data
 
         TFColor voxelColor = new TFColor();
-        int diagonal = (int) Math.sqrt(volume.getDimX() * volume.getDimX() + volume.getDimZ() * volume.getDimZ() + volume.getDimY() * volume.getDimY());
 
         //Calculating max
         double max = volume.getMaximum();
-//        switch (this.rendererType) {
-//            case "compositing":
-//                for (int j = 0; j < image.getHeight(); ++j) {
-//                    for (int i = 0; i < image.getWidth(); ++i) {
-//                        int val = getValueByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
-//                        if (max < val) max = val;
-//                    }
-//                }
-//                break;
-//            case "MIP":
-//            case "slicer":
-//                max = volume.getMaximum();
-//                break;
-//            default:
-//                break;
-//        }
 
         for (int j = 0; j < image.getHeight(); j++) {
             for (int i = 0; i < image.getWidth(); i++) {
@@ -412,8 +406,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         break;
                     case "compositing":
                         voxelColor = getColorByCompositing(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
-                        // Alternatively, apply the transfer function to obtain a color
-                        // voxelColor = tFunc.getColor(val);
                         break;
                     case "tf2d":
                         voxelColor = getColorBy2DTransferFunction(i, j, viewVec, uVec, vVec, volumeCenter, imageCenter);
