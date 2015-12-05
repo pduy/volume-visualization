@@ -18,6 +18,7 @@ import util.TFChangeListener;
 import util.VectorMath;
 import volume.GradientVolume;
 import volume.Volume;
+import volume.VoxelGradient;
 
 /**
  * @author michel
@@ -199,6 +200,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
     TFColor getColorBy2DTransferFunction(int i, int j, double[] viewVec, double[] uVec, double[] vVec, double[] volumeCenter, int imageCenter) {
         double[] pixelCoord = new double[3];
+        VoxelGradient maximumGradient = new VoxelGradient();
 
         int[] traversalRange = getTraversalRange(i, j, viewVec, uVec, vVec, imageCenter);
 
@@ -227,19 +229,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             //Extract color
             TFColor pixelColor = tfEditor2D.triangleWidget.color;
 
-            double alpha = 0;
-            double r = tfEditor2D.triangleWidget.radius;
-            int fv = tfEditor2D.triangleWidget.baseIntensity;
-            double av = tfEditor2D.triangleWidget.color.a;
-            double fi = getVoxel(pixelCoord);
-            float deltaFi = gradients.getGradient((int)pixelCoord[0], (int)pixelCoord[1], (int)pixelCoord[2]).mag;
-
-            if (deltaFi == 0 && fi == fv) {
-                alpha = av;
-            } else if (deltaFi > 0 && fi - r * deltaFi <= fv && fi + r * deltaFi >= fv)  {
-                alpha = av * (1 - Math.abs(fv - fi) / (r * deltaFi));
-            } else {
-                alpha = 0;
+            double alpha = getWeightedAlpha(pixelCoord);
+            VoxelGradient currGradient = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]);
+            if (currGradient.mag > maximumGradient.mag && t < traversalRange[1] / 2) {
+                maximumGradient = currGradient;
             }
 
             tempColor.a = 1 - alpha * tempColor.a;
@@ -248,8 +241,54 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             tempColor.b = alpha * pixelColor.b + (1 - alpha) * tempColor.b;
         }
 
+        TFColor shadeColor = shade(maximumGradient, tfEditor2D.triangleWidget.color, viewVec, 0.1, 0.7, 0.2, 10);
+        if (getVolume().shading && shadeColor != null && maximumGradient.mag > 10) {
+            tempColor.r = shadeColor.r;
+            tempColor.g = shadeColor.g;
+            tempColor.b = shadeColor.b;
+        }
+
         return tempColor;
 
+    }
+
+    double getWeightedAlpha(double[] pixelCoord) {
+        double alpha = 0;
+        double r = tfEditor2D.triangleWidget.radius;
+        int fv = tfEditor2D.triangleWidget.baseIntensity;
+        double av = tfEditor2D.triangleWidget.color.a;
+        double fi = getVoxel(pixelCoord);
+        float deltaFi = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]).mag;
+
+        if (deltaFi == 0 && fi == fv) {
+            alpha = av;
+        } else if (deltaFi > 0 && fi - r * deltaFi <= fv && fi + r * deltaFi >= fv) {
+            alpha = av * (1 - Math.abs(fv - fi) / (r * deltaFi));
+        }
+
+        return alpha;
+    }
+
+    TFColor shade(VoxelGradient gradient, TFColor pixelColor, double[] viewVector, double kAmbient, double kDiff, double kSpec, double alpha) {
+
+        viewVector[0] /= VectorMath.length(viewVector);
+        viewVector[1] /= VectorMath.length(viewVector);
+        viewVector[2] /= VectorMath.length(viewVector);
+
+        double[] gradientVector = new double[]{gradient.x / gradient.mag, gradient.y / gradient.mag, gradient.z / gradient.mag};
+        double dotProduct = VectorMath.dotproduct(gradientVector, viewVector);
+
+        if (dotProduct < 0) dotProduct = -dotProduct;
+        double r = kAmbient
+                + pixelColor.r * kDiff * dotProduct
+                + kSpec * Math.pow(dotProduct, alpha);
+        double g = kAmbient
+                + pixelColor.g * kDiff * dotProduct
+                + kSpec * Math.pow(dotProduct, alpha);
+        double b = kAmbient
+                + pixelColor.b * kDiff * dotProduct
+                + kSpec * Math.pow(dotProduct, alpha);
+        return new TFColor(r, g, b, 1);
     }
 
     int[] getTraversalRange(int i, int j, double[] viewVec, double[] uVec, double[] vVec, int imageCenter) {

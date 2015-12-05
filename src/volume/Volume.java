@@ -14,6 +14,7 @@ import java.io.IOException;
  */
 public class Volume {
     public boolean interpolate = false;
+    public boolean shading = false;
 
     public Volume(int xd, int yd, int zd) {
         data = new short[xd * yd * zd];
