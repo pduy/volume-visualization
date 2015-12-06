@@ -10,6 +10,7 @@ import gui.RaycastRendererPanel;
 import gui.TransferFunction2DEditor;
 import gui.TransferFunctionEditor;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -174,7 +175,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor tempColor = new TFColor(0.0, 0.0, 0.0, 1.0);
         ArrayList<VoxelGradient> boundaryGradCandidates = new ArrayList<>();
-        for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
+        int step = getVolume().reduceVolumeRes ? 2 : 1;
+        for (int t = traversalRange[1]; t >= traversalRange[0]; t -= step) {
 
             //Get the current pixel
             double[] currentPosition = new double[3];
@@ -202,7 +204,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
 
-        if (getVolume().shading && boundaryGradCandidates.size() > 0)  {
+        if (getVolume().shading && boundaryGradCandidates.size() > 0) {
             double oldAlpha = tempColor.a;
             tempColor = shade(boundaryGradCandidates.get(boundaryGradCandidates.size() - 1), tempColor, viewVec, 0.1, 0.7, 0.2, 10);
             tempColor.a = oldAlpha;
@@ -228,9 +230,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
 
         TFColor tempColor = new TFColor(0.0, 0.0, 0.0, 1.0);
         ArrayList<VoxelGradient> boundaryGradCandidates = new ArrayList<>();
-        for (int t = traversalRange[1]; t >= traversalRange[0]; --t) {
-//        for (int t = 100; t >= -200; --t) {
-
+        int step = getVolume().reduceVolumeRes ? 2 : 1;
+        for (int t = traversalRange[1]; t >= traversalRange[0]; t -= step) {
             //Get the current pixel
             double[] currentPosition = new double[3];
             VectorMath.setVector(currentPosition, t * viewVec[0] + volumeCenter[0], t * viewVec[1] + volumeCenter[1], t * viewVec[2] + volumeCenter[2]);
@@ -395,8 +396,12 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         //Calculating max
         double max = volume.getMaximum();
 
-        for (int j = 0; j < image.getHeight(); j++) {
-            for (int i = 0; i < image.getWidth(); i++) {
+        for (int j = 0; j < image.getHeight(); j ++) {
+            for (int i = 0; i < image.getWidth(); i ++) {
+                if (getVolume().reduceImageRes && (j % 2 != 0 || i % 2 != 0)) {
+                    continue;
+                }
+
                 int val;
 
                 switch (this.rendererType) {
@@ -438,6 +443,50 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
             }
         }
 
+        if (getVolume().reduceImageRes) {
+            for (int j = 1; j < image.getHeight() - 1; j++) {
+                for (int i = 1; i < image.getWidth() - 1; i++) {
+                    int leftColor = image.getRGB(i - 1, j);
+                    int rightColor = image.getRGB(i + 1, j);
+                    int topColor = image.getRGB(i, j - 1);
+                    int bottomColor = image.getRGB(i, j + 1);
+
+                    if (j % 2 == 0 && i % 2 != 0) {
+                        Color leftRGBColor = new Color(leftColor);
+                        Color rightRGBColor = new Color(rightColor);
+                        int newColor = (((leftRGBColor.getAlpha() + rightRGBColor.getAlpha()) / 2) << 24)
+                                | (((leftRGBColor.getRed() + rightRGBColor.getRed()) / 2) << 16)
+                                | (((leftRGBColor.getGreen() + rightRGBColor.getGreen()) / 2) << 8)
+                                | ((leftRGBColor.getBlue() + rightRGBColor.getBlue()) / 2);
+                        image.setRGB(i, j, newColor);
+                    } else if (j % 2 != 0 && i % 2 == 0) {
+                        Color topRGBColor = new Color(topColor);
+                        Color bottomRGBColor = new Color(bottomColor);
+                        int newColor = (((topRGBColor.getAlpha() + bottomRGBColor.getAlpha()) / 2) << 24)
+                                | (((topRGBColor.getRed() + bottomRGBColor.getRed()) / 2) << 16)
+                                | (((topRGBColor.getGreen() + bottomRGBColor.getGreen()) / 2) << 8)
+                                | ((topRGBColor.getBlue() + bottomRGBColor.getBlue()) / 2);
+                        image.setRGB(i, j, newColor);
+                    } else if (j % 2 != 0 && i % 2 != 0) {
+                        int topLeftColor = image.getRGB(i - 1, j - 1);
+                        int topRightColor = image.getRGB(i - 1, j + 1);
+                        int bottomLeftColor = image.getRGB(i + 1, j - 1);
+                        int bottomRightColor = image.getRGB(i + 1, j + 1);
+
+                        Color topLeftRGB = new Color(topLeftColor);
+                        Color topRightRGB = new Color(topRightColor);
+                        Color bottomLeftRGB = new Color(bottomLeftColor);
+                        Color bottomRightRGB = new Color(bottomRightColor);
+
+                        int newColor = (((topLeftRGB.getAlpha() + topRightRGB.getAlpha() + bottomLeftRGB.getAlpha() + bottomRightRGB.getAlpha()) / 4) << 24)
+                                | (((topLeftRGB.getRed() + topRightRGB.getRed() + bottomLeftRGB.getRed() + bottomRightRGB.getRed()) / 4) << 16)
+                                | (((topLeftRGB.getGreen() + topRightRGB.getGreen() + bottomLeftRGB.getGreen() + bottomRightRGB.getGreen()) / 4) << 8)
+                                | ((topLeftRGB.getBlue() + topRightRGB.getBlue() + bottomLeftRGB.getBlue() + bottomRightRGB.getBlue()) / 4);
+                        image.setRGB(i, j, newColor);
+                    }
+                }
+            }
+        }
     }
 
     private void drawBoundingBox(GL2 gl) {

@@ -127,5 +127,21 @@
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="shadingCheckboxActionPerformed"/>
       </Events>
     </Component>
+    <Component class="javax.swing.JCheckBox" name="reduceImageResCheckbox">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Reduce Image Resolution"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="reduceImageCheckboxActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JCheckBox" name="reduceVolumeResCheckbox">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Reduce Volume Resolution"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="reduceVolumeCheckboxActionPerformed"/>
+      </Events>
+    </Component>
   </SubComponents>
 </Form>

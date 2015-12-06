@@ -28,8 +28,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     public void setSpeedLabel(String text) {
         renderingSpeedLabel.setText(text);
     }
-    
-    
+
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -48,6 +48,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         tf2dButton = new javax.swing.JRadioButton();
         shadingCheckbox = new javax.swing.JCheckBox();
         interpolationCheckbox = new javax.swing.JCheckBox();
+        reduceImageResCheckbox = new javax.swing.JCheckBox();
+        reduceVolumeResCheckbox = new javax.swing.JCheckBox();
 
         jLabel1.setText("Rendering time (ms):");
 
@@ -100,6 +102,20 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
             }
         });
 
+        reduceImageResCheckbox.setText("Reduce Image Resolution");
+        reduceImageResCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reduceImageCheckboxActionPerformed(evt);
+            }
+        });
+
+        reduceVolumeResCheckbox.setText("Reduce Volume Resolution");
+        reduceVolumeResCheckbox.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                reduceVolumeCheckboxActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -117,7 +133,9 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
                         .addComponent(mipButton)
                         .addComponent(slicerButton)
                         .addComponent(shadingCheckbox)
-                        .addComponent(interpolationCheckbox)))
+                        .addComponent(interpolationCheckbox)
+                        .addComponent(reduceImageResCheckbox)
+                        .addComponent(reduceVolumeResCheckbox)))
                 .addContainerGap(339, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -138,6 +156,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
                 .addGap(18, 18, 18)
                 .addComponent(shadingCheckbox)
                 .addComponent(interpolationCheckbox)
+                .addComponent(reduceImageResCheckbox)
+                .addComponent(reduceVolumeResCheckbox)
                 .addContainerGap(137, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
@@ -172,6 +192,24 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
         this.renderer.changed();
     }//GEN-LAST:event_shadingCheckboxActionPerformed
 
+    private void reduceImageCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
+        if (reduceImageResCheckbox.isSelected()) {
+            this.renderer.getVolume().reduceImageRes = true;
+        } else {
+            this.renderer.getVolume().reduceImageRes = false;
+        }
+        this.renderer.changed();
+    }//GEN-LAST:event_shadingCheckboxActionPerformed
+
+    private void reduceVolumeCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_shadingCheckboxActionPerformed
+        if (reduceVolumeResCheckbox.isSelected()) {
+            this.renderer.getVolume().reduceVolumeRes = true;
+        } else {
+            this.renderer.getVolume().reduceVolumeRes = false;
+        }
+        this.renderer.changed();
+    }//GEN-LAST:event_shadingCheckboxActionPerformed
+
     private void interpolationCheckboxActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_interpolationCheckboxActionPerformed
         if (interpolationCheckbox.isSelected()) {
             this.renderer.getVolume().interpolate = true;
@@ -189,6 +227,8 @@ public class RaycastRendererPanel extends javax.swing.JPanel {
     private javax.swing.JLabel renderingSpeedLabel;
     private javax.swing.JCheckBox shadingCheckbox;
     private javax.swing.JCheckBox interpolationCheckbox;
+    private javax.swing.JCheckBox reduceImageResCheckbox;
+    private javax.swing.JCheckBox reduceVolumeResCheckbox;
     private javax.swing.JRadioButton slicerButton;
     private javax.swing.JRadioButton tf2dButton;
     // End of variables declaration//GEN-END:variables
