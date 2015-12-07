@@ -280,6 +280,10 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         double fi = getVoxel(pixelCoord);
         float deltaFi = gradients.getGradient((int) pixelCoord[0], (int) pixelCoord[1], (int) pixelCoord[2]).mag;
 
+        if (deltaFi > tfEditor2D.triangleWidget.upperBoundGradient || deltaFi < tfEditor2D.triangleWidget.lowerBoundGradient) {
+            return alpha;
+        }
+
         if (deltaFi == 0 && fi == fv) {
             alpha = av;
         } else if (deltaFi > 0 && fi - r * deltaFi <= fv && fi + r * deltaFi >= fv) {
