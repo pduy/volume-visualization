@@ -467,8 +467,8 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                         image.setRGB(i, j, newColor);
                     } else if (j % 2 != 0 && i % 2 != 0) {
                         int topLeftColor = image.getRGB(i - 1, j - 1);
-                        int topRightColor = image.getRGB(i - 1, j + 1);
-                        int bottomLeftColor = image.getRGB(i + 1, j - 1);
+                        int bottomLeftColor = image.getRGB(i - 1, j + 1);
+                        int topRightColor = image.getRGB(i + 1, j - 1);
                         int bottomRightColor = image.getRGB(i + 1, j + 1);
 
                         Color topLeftRGB = new Color(topLeftColor);
@@ -480,6 +480,26 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                                 | (((topLeftRGB.getRed() + topRightRGB.getRed() + bottomLeftRGB.getRed() + bottomRightRGB.getRed()) / 4) << 16)
                                 | (((topLeftRGB.getGreen() + topRightRGB.getGreen() + bottomLeftRGB.getGreen() + bottomRightRGB.getGreen()) / 4) << 8)
                                 | ((topLeftRGB.getBlue() + topRightRGB.getBlue() + bottomLeftRGB.getBlue() + bottomRightRGB.getBlue()) / 4);
+                        image.setRGB(i, j, newColor);
+                    }
+                }
+            }
+            for (int j = 1; j < image.getHeight() - 1; j++) {
+                for (int i = 1; i < image.getWidth() - 1; i++) {
+                    int leftColor = image.getRGB(i - 1, j);
+                    int rightColor = image.getRGB(i + 1, j);
+                    int topColor = image.getRGB(i, j - 1);
+                    int bottomColor = image.getRGB(i, j + 1);
+                    Color leftRGBColor = new Color(leftColor);
+                    Color rightRGBColor = new Color(rightColor);
+                    Color topRGBColor = new Color(topColor);
+                    Color bottomRGBColor = new Color(bottomColor);
+
+                    if ((j % 2 == 0 && i % 2 != 0) || (j % 2 != 0 && i % 2 == 0)) {
+                        int newColor = (((leftRGBColor.getAlpha() + rightRGBColor.getAlpha() + topRGBColor.getAlpha() + bottomRGBColor.getAlpha()) / 4) << 24)
+                                | (((leftRGBColor.getRed() + rightRGBColor.getRed() + topRGBColor.getRed() + bottomRGBColor.getRed()) / 4) << 16)
+                                | (((leftRGBColor.getGreen() + rightRGBColor.getGreen() + topRGBColor.getGreen() + bottomRGBColor.getGreen()) / 4) << 8)
+                                | ((leftRGBColor.getBlue() + rightRGBColor.getBlue() + topRGBColor.getBlue() + bottomRGBColor.getBlue()) / 4);
                         image.setRGB(i, j, newColor);
                     }
                 }
