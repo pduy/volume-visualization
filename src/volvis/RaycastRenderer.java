@@ -62,7 +62,7 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
         tFunc = new TransferFunction(volume.getMinimum(), volume.getMaximum());
 
         // uncomment this to initialize the TF with good starting values for the orange dataset 
-        tFunc.setTestFunc();
+//        tFunc.setTestFunc();
 
 
         tFunc.addTFChangeListener(this);
