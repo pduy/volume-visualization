@@ -484,26 +484,6 @@ public class RaycastRenderer extends Renderer implements TFChangeListener {
                     }
                 }
             }
-            for (int j = 1; j < image.getHeight() - 1; j++) {
-                for (int i = 1; i < image.getWidth() - 1; i++) {
-                    int leftColor = image.getRGB(i - 1, j);
-                    int rightColor = image.getRGB(i + 1, j);
-                    int topColor = image.getRGB(i, j - 1);
-                    int bottomColor = image.getRGB(i, j + 1);
-                    Color leftRGBColor = new Color(leftColor);
-                    Color rightRGBColor = new Color(rightColor);
-                    Color topRGBColor = new Color(topColor);
-                    Color bottomRGBColor = new Color(bottomColor);
-
-                    if ((j % 2 == 0 && i % 2 != 0) || (j % 2 != 0 && i % 2 == 0)) {
-                        int newColor = (((leftRGBColor.getAlpha() + rightRGBColor.getAlpha() + topRGBColor.getAlpha() + bottomRGBColor.getAlpha()) / 4) << 24)
-                                | (((leftRGBColor.getRed() + rightRGBColor.getRed() + topRGBColor.getRed() + bottomRGBColor.getRed()) / 4) << 16)
-                                | (((leftRGBColor.getGreen() + rightRGBColor.getGreen() + topRGBColor.getGreen() + bottomRGBColor.getGreen()) / 4) << 8)
-                                | ((leftRGBColor.getBlue() + rightRGBColor.getBlue() + topRGBColor.getBlue() + bottomRGBColor.getBlue()) / 4);
-                        image.setRGB(i, j, newColor);
-                    }
-                }
-            }
         }
     }
 
